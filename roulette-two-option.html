@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Last Spin & Opposite — Two-Bet Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,800;1,500&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --felt-0:#08160e;--felt-1:#0e2417;--gold:#d8b24a;--gold-soft:#c9a227;
+    --cream:#f3ecd8;--cream-dim:#b6ad94;--red:#b32027;--red-bright:#d8313a;
+    --black:#1c1c1c;--black-bright:#2b2b2b;--green:#1f7a44;--line:rgba(216,178,74,.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Spectral",Georgia,serif;color:var(--cream);
+    background:radial-gradient(120% 90% at 50% -10%,#1a4a2c 0%,var(--felt-1) 45%,var(--felt-0) 100%);
+    min-height:100vh;line-height:1.55;-webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity:.6;mix-blend-mode:overlay;
+  }
+  .wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:42px 22px 80px;}
+  header{text-align:center;margin-bottom:26px;}
+  .kicker{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.42em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:14px;}
+  h1{font-family:"Playfair Display",serif;font-weight:800;font-style:italic;font-size:clamp(32px,5.6vw,54px);line-height:1.02;margin:0;color:var(--cream);text-shadow:0 2px 18px rgba(0,0,0,.5);}
+  h1 .amp{color:var(--gold);font-style:normal;font-weight:500;}
+  .sub{color:var(--cream-dim);font-size:15px;max-width:560px;margin:14px auto 0;font-style:italic;}
+
+  .realtalk{
+    margin:24px auto 0;max-width:780px;border-left:3px solid var(--gold);
+    background:linear-gradient(90deg,rgba(216,178,74,.1),rgba(216,178,74,.01));
+    border-radius:0 4px 4px 0;padding:16px 20px;font-size:13.5px;color:var(--cream-dim);
+  }
+  .realtalk .h{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-soft);margin-bottom:8px;}
+  .realtalk b{color:var(--cream);font-weight:500;}
+
+  .panel{margin-top:30px;background:rgba(8,18,11,.55);border:1px solid var(--line);border-radius:6px;padding:24px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 18px 40px rgba(0,0,0,.35);}
+  .panel-title{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold-soft);margin:0 0 18px;display:flex;align-items:baseline;gap:12px;}
+  .panel-title .ord{font-family:"Playfair Display",serif;font-style:italic;font-size:20px;color:var(--gold);letter-spacing:0;text-transform:none;}
+  .panel-title .hint{font-family:"Spectral";text-transform:none;letter-spacing:0;color:var(--cream-dim);font-size:13px;}
+
+  .picker{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;}
+  .chip{width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.12);font-family:"JetBrains Mono",monospace;font-weight:600;font-size:14px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .12s ease,box-shadow .12s ease,outline-color .12s ease;outline:2px solid transparent;outline-offset:2px;user-select:none;}
+  .chip.red{background:radial-gradient(circle at 35% 30%,var(--red-bright),var(--red));}
+  .chip.black{background:radial-gradient(circle at 35% 30%,var(--black-bright),var(--black));}
+  .chip.green{background:radial-gradient(circle at 35% 30%,#2ea25b,var(--green));}
+  .chip:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,.4);}
+  .chip.sel{outline-color:var(--gold);box-shadow:0 0 0 2px rgba(216,178,74,.35),0 8px 18px rgba(0,0,0,.5);transform:translateY(-2px);}
+
+  .toggle-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px;}
+  .toggle{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.04em;background:transparent;color:var(--cream-dim);border:1px solid var(--line);padding:11px 18px;border-radius:4px;cursor:pointer;transition:all .15s ease;}
+  .toggle b{color:var(--cream);font-weight:700;}
+  .toggle .pct{color:var(--gold-soft);}
+  .toggle:hover{border-color:var(--gold-soft);color:var(--cream);}
+  .toggle.on{background:linear-gradient(180deg,rgba(216,178,74,.18),rgba(216,178,74,.05));border-color:var(--gold);color:var(--cream);}
+
+  .stage{display:grid;grid-template-columns:minmax(280px,1fr) 1.05fr;gap:30px;align-items:start;}
+  @media(max-width:760px){.stage{grid-template-columns:1fr;}}
+  .wheel-box{display:flex;flex-direction:column;align-items:center;gap:8px;}
+  svg.wheel{width:100%;max-width:380px;height:auto;display:block;filter:drop-shadow(0 14px 26px rgba(0,0,0,.5));}
+  .wedge{transition:opacity .25s ease;}
+  .wedge.dim{opacity:.18;}
+  .wlabel{font-family:"JetBrains Mono",monospace;font-size:12px;fill:#fff;font-weight:600;pointer-events:none;}
+  .wlabel.dim{opacity:.22;}
+  .hub-num{font-family:"Playfair Display",serif;font-weight:800;fill:var(--cream);}
+  .hub-cap{font-family:"JetBrains Mono",monospace;fill:var(--gold-soft);letter-spacing:.12em;}
+  .legend{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--cream-dim);}
+
+  .steps{display:flex;flex-direction:column;gap:14px;}
+  .step{border:1px solid var(--line);border-radius:6px;padding:16px;cursor:pointer;background:rgba(8,18,11,.4);transition:border-color .18s ease,background .18s ease;}
+  .step:hover{border-color:var(--gold-soft);}
+  .step.active{border-color:var(--gold);background:linear-gradient(180deg,rgba(216,178,74,.1),rgba(216,178,74,.02));}
+  .step-head{display:flex;align-items:center;gap:12px;margin-bottom:12px;}
+  .step-center{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:"JetBrains Mono",monospace;font-weight:700;font-size:18px;color:#fff;flex-shrink:0;border:1px solid rgba(255,255,255,.14);box-shadow:0 4px 10px rgba(0,0,0,.4);}
+  .step-center.red{background:radial-gradient(circle at 35% 30%,var(--red-bright),var(--red));}
+  .step-center.black{background:radial-gradient(circle at 35% 30%,var(--black-bright),var(--black));}
+  .step-center.green{background:radial-gradient(circle at 35% 30%,#2ea25b,var(--green));}
+  .step-ord{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-soft);}
+  .step-meta .t{font-family:"Playfair Display",serif;font-style:italic;font-size:17px;color:var(--cream);}
+  .step-meta .d{font-size:12.5px;color:var(--cream-dim);}
+  .covered{display:flex;flex-wrap:wrap;gap:5px;}
+  .mini{min-width:25px;height:25px;padding:0 5px;border-radius:50%;font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:600;color:#fff;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.1);}
+  .mini.red{background:var(--red);}
+  .mini.black{background:#262626;}
+  .mini.green{background:var(--green);}
+  .mini.is-center{outline:2px solid var(--gold);outline-offset:1px;}
+
+  .plan{text-align:center;margin-top:18px;font-size:14px;color:var(--cream-dim);}
+  .plan b{color:var(--gold);font-family:"JetBrains Mono",monospace;font-size:15px;}
+  footer{text-align:center;margin-top:40px;font-size:12px;color:var(--cream-dim);font-style:italic;line-height:1.7;}
+  footer b{color:var(--cream-dim);font-weight:500;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">European Single‑Zero · Two‑Bet Plan</div>
+    <h1>Last Spin <span class="amp">&</span> Opposite</h1>
+    <p class="sub">Enter the number that just hit. Bet that arc; if it loses, swing to the opposite arc. Two options, that's it.</p>
+    <div class="realtalk">
+      <div class="h">Worth knowing</div>
+      <p>The wheel has no memory — the last number doesn't tilt the next spin toward the opposite side. Each bet of <b>19 numbers is 51.35%</b>, every spin, regardless of history. A streak watched over a few hours is variance, not a 70% edge, and the <b>2.70% house edge</b> stays put. This tool is a clean reference for the plan you described — not a claim that it beats the wheel.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <p class="panel-title"><span class="ord">i.</span> What just hit? <span class="hint">— the last outcome</span></p>
+    <div class="picker" id="picker"></div>
+    <div class="toggle-row">
+      <button class="toggle on" data-half="9">±9 each side · <b>19 numbers</b> · <span class="pct">~51%</span></button>
+      <button class="toggle" data-half="6">±6 each side · <b>13 numbers</b> · <span class="pct">~35%</span></button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <p class="panel-title"><span class="ord">ii.</span> Your two bets <span class="hint">— tap a card to light its arc</span></p>
+    <div class="stage">
+      <div class="wheel-box">
+        <svg class="wheel" id="wheel" viewBox="0 0 500 500" aria-label="Roulette wheel"></svg>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="steps" id="steps"></div>
+    </div>
+    <p class="plan" id="plan"></p>
+  </section>
+
+  <footer>
+    Opposite centre = 19 wheel‑pockets across, so the two ±9 arcs split the wheel almost perfectly.<br>
+    <b>Reference only. Gambling carries real financial risk — set a loss limit before you start.</b>
+  </footer>
+</div>
+
+<script>
+(function(){
+  const WHEEL=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+  const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+  const N=37,CX=250,CY=250,R_OUT=232,R_IN=150,R_LBL=191;
+  const COL={red:'#b32027',black:'#1c1c1c',green:'#1f7a44'};
+  let lastNum=27, half=9, activeStep=0;
+
+  const posOf=n=>WHEEL.indexOf(n);
+  const colorOf=n=>n===0?'green':(RED.has(n)?'red':'black');
+  const mod=(a,m)=>((a%m)+m)%m;
+  const arcPos=cp=>{const o=[];for(let d=-half;d<=half;d++)o.push(mod(cp+d,N));return o;};
+  function centers(n){const p=posOf(n);return [p, mod(p+19,N)];}
+
+  // wheel
+  const svg=document.getElementById('wheel');
+  const polar=(r,a)=>[CX+r*Math.cos(a),CY+r*Math.sin(a)];
+  function wedge(i){
+    const a0=((i-0.5)/N)*2*Math.PI-Math.PI/2, a1=((i+0.5)/N)*2*Math.PI-Math.PI/2;
+    const [xo0,yo0]=polar(R_OUT,a0),[xo1,yo1]=polar(R_OUT,a1);
+    const [xi1,yi1]=polar(R_IN,a1),[xi0,yi0]=polar(R_IN,a0);
+    return `M ${xo0} ${yo0} A ${R_OUT} ${R_OUT} 0 0 1 ${xo1} ${yo1} L ${xi1} ${yi1} A ${R_IN} ${R_IN} 0 0 0 ${xi0} ${yi0} Z`;
+  }
+  let s=`<circle cx="${CX}" cy="${CY}" r="${R_OUT+5}" fill="none" stroke="#d8b24a" stroke-width="2" opacity="0.5"/>`;
+  WHEEL.forEach((num,i)=>{
+    const a=(i/N)*2*Math.PI-Math.PI/2; const [lx,ly]=polar(R_LBL,a);
+    s+=`<path class="wedge" data-pos="${i}" d="${wedge(i)}" fill="${COL[colorOf(num)]}" stroke="#0a160e" stroke-width="1"/>`;
+    s+=`<text class="wlabel" data-pos="${i}" x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central">${num}</text>`;
+  });
+  s+=`<circle cx="${CX}" cy="${CY}" r="${R_IN-6}" fill="#0c2114" stroke="#d8b24a" stroke-width="1.5" opacity="0.9"/>`;
+  s+=`<text class="hub-num" id="hubNum" x="${CX}" y="${CY-8}" text-anchor="middle" font-size="56">27</text>`;
+  s+=`<text class="hub-cap" id="hubCap" x="${CX}" y="${CY+34}" text-anchor="middle" font-size="11">LAST SPIN</text>`;
+  svg.innerHTML=s;
+
+  // picker
+  const picker=document.getElementById('picker');
+  [0,...Array.from({length:36},(_,k)=>k+1)].forEach(n=>{
+    const b=document.createElement('button');
+    b.className='chip '+colorOf(n); b.textContent=n; b.dataset.num=n;
+    b.addEventListener('click',()=>{lastNum=n;activeStep=0;render();});
+    picker.appendChild(b);
+  });
+  document.querySelectorAll('.toggle').forEach(t=>t.addEventListener('click',()=>{
+    half=+t.dataset.half;
+    document.querySelectorAll('.toggle').forEach(x=>x.classList.toggle('on',x===t));
+    render();
+  }));
+
+  const ORD=["Last Spin — bet this first","Bet — if the first loses"];
+  const CAP=["LAST SPIN","THE BET"];
+  const stepsEl=document.getElementById('steps');
+
+  function render(){
+    picker.querySelectorAll('.chip').forEach(c=>c.classList.toggle('sel',+c.dataset.num===lastNum));
+    const cs=centers(lastNum), cnums=cs.map(p=>WHEEL[p]);
+
+    stepsEl.innerHTML='';
+    cs.forEach((cp,si)=>{
+      const cnum=WHEEL[cp], nums=arcPos(cp).map(p=>WHEEL[p]);
+      const card=document.createElement('div');
+      card.className='step'+(si===activeStep?' active':'');
+      let chips=''; nums.forEach(nm=>chips+=`<span class="mini ${colorOf(nm)}${nm===cnum?' is-center':''}">${nm}</span>`);
+      card.innerHTML=`<div class="step-head">
+          <div class="step-center ${colorOf(cnum)}">${cnum}</div>
+          <div class="step-meta">
+            <div class="step-ord">${ORD[si]}</div>
+            <div class="t">Centre on ${cnum}</div>
+            <div class="d">${nums.length} numbers · ${(nums.length/N*100).toFixed(0)}% of the wheel</div>
+          </div></div>
+        <div class="covered">${chips}</div>`;
+      card.addEventListener('click',()=>{activeStep=si;render();});
+      stepsEl.appendChild(card);
+    });
+
+    const cov=new Set(arcPos(cs[activeStep]));
+    svg.querySelectorAll('.wedge').forEach(w=>{
+      const p=+w.dataset.pos, on=cov.has(p);
+      w.classList.toggle('dim',!on);
+      w.setAttribute('stroke',p===cs[activeStep]?'#d8b24a':'#0a160e');
+      w.setAttribute('stroke-width',p===cs[activeStep]?'2.5':'1');
+    });
+    svg.querySelectorAll('.wlabel').forEach(l=>l.classList.toggle('dim',!cov.has(+l.dataset.pos)));
+    document.getElementById('hubNum').textContent=cnums[activeStep];
+    document.getElementById('hubCap').textContent=CAP[activeStep];
+
+    const combined=new Set([...arcPos(cs[0]),...arcPos(cs[1])]);
+    document.getElementById('legend').textContent=`Both arcs together cover ${combined.size} of 37 pockets`;
+    document.getElementById('plan').innerHTML=`Last spin <b>${cnums[0]}</b> &nbsp;→&nbsp; if it loses, bet <b>${cnums[1]}</b>'s arc`;
+  }
+  render();
+})();
+</script>
+</body>
+</html>
